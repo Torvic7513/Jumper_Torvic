@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Jump Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #f0f0f0;
+      font-family: sans-serif;
+    }
+    canvas {
+      display: block;
+      background-color: #ffffff;
+      margin: 0 auto;
+      border: 2px solid #000;
+    }
+    #gameOver {
+      position: absolute;
+      top: 40%;
+      width: 100%;
+      text-align: center;
+      font-size: 24px;
+      color: red;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <div id="gameOver">Game Over! Klicke oder drücke Leertaste zum Neustart</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const player = {
+      x: 100,
+      y: 300,
+      width: 40,
+      height: 40,
+      velocityY: 0,
+      jumpStrength: -12,
+      gravity: 0.6,
+      isJumping: false
+    };
+
+    let obstacles = [];
+    let score = 0;
+    let gameOver = false;
+
+    function createObstacle() {
+      const height = 60;
+      const width = 30;
+      const x = canvas.width + Math.random() * 200;
+      const y = canvas.height - height;
+      return { x, y, width, height };
+    }
+
+    function resetGame() {
+      player.y = 300;
+      player.velocityY = 0;
+      player.isJumping = false;
+      obstacles = [createObstacle()];
+      score = 0;
+      gameOver = false;
+      document.getElementById('gameOver').style.display = 'none';
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      player.velocityY += player.gravity;
+      player.y += player.velocityY;
+
+      if (player.y >= 300) {
+        player.y = 300;
+        player.isJumping = false;
+      }
+
+      // Hindernisse bewegen und erzeugen
+      obstacles.forEach(ob => ob.x -= 5);
+      if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < 400) {
+        obstacles.push(createObstacle());
+      }
+
+      // Entferne alte Hindernisse
+      obstacles = obstacles.filter(ob => ob.x + ob.width > 0);
+
+      // Kollision prüfen
+      obstacles.forEach(ob => {
+        if (
+          player.x < ob.x + ob.width &&
+          player.x + player.width > ob.x &&
+          player.y < ob.y + ob.height &&
+          player.y + player.height > ob.y
+        ) {
+          gameOver = true;
+          document.getElementById('gameOver').style.display = 'block';
+        }
+      });
+
+      // Score erhöhen
+      score++;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Spieler
+      ctx.fillStyle = '#00aa00';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      // Hindernisse
+      ctx.fillStyle = '#aa0000';
+      obstacles.forEach(ob => {
+        ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
+      });
+
+      // Score
+      ctx.fillStyle = '#000';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Score: ${score}`, 10, 30);
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function jump() {
+      if (!player.isJumping && !gameOver) {
+        player.velocityY = player.jumpStrength;
+        player.isJumping = true;
+      } else if (gameOver) {
+        resetGame();
+      }
+    }
+
+    // Event-Handling
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space') jump();
+    });
+
+    window.addEventListener('mousedown', jump);
+
+    // Spiel starten
+    resetGame();
+    gameLoop();
+  </script>
+</body>
+</html>
